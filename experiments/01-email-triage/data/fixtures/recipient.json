@@ -1,0 +1,14 @@
+{
+  "about": "Freelance illustrator who also runs a small online print shop, on hosting and payment accounts they pay for personally. Has a child in preschool.",
+  "cares_about": [
+    "Financial and security alerts on accounts they own: bank, payments, and the hosting the shop runs on. These matter even when automated.",
+    "A real person waiting on them: family, clients, the landlord, the preschool, doctors.",
+    "A real person reaching out personally about a specific commission or collaboration."
+  ],
+  "does_not_care_about": [
+    "Developer platform notifications: CI, deploys.",
+    "Newsletters and digests, even ones they read.",
+    "Marketing, promotions and cold sales pitches.",
+    "Social network digests."
+  ]
+}

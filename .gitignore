@@ -1,0 +1,23 @@
+# Real data — NEVER commit. The script is the artifact; the data is not.
+# Anything under data/real/ or raw/ is derived from a real inbox (sender names,
+# addresses, subject lines) or is a per-item API response that echoes it.
+# Only code, synthetic fixtures, and aggregate RESULTS.md numbers are publishable.
+**/data/real/
+**/raw/
+*.csv
+*.jsonl
+*.tsv
+
+# Except synthetic fixtures, which contain no real data.
+!**/data/fixtures/**/*.jsonl
+!**/data/fixtures/**/*.csv
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Local scratch
+node_modules/
+.DS_Store
+*.log

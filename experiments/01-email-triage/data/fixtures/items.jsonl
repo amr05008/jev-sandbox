@@ -1,0 +1,12 @@
+{"id":"fx-001","state":{"sender_name":"Priya Natarajan","sender_email":"priya@harborlane.example","subject":"Can you send the signed lease by Friday?"},"expected":"needs-attention"}
+{"id":"fx-002","state":{"sender_name":"The Morning Dispatch","sender_email":"newsletter@morningdispatch.example","subject":"5 things to know today"},"expected":"routine"}
+{"id":"fx-003","state":{"sender_name":"Parcelway","sender_email":"no-reply@parcelway.example","subject":"Your package is out for delivery"},"expected":"routine"}
+{"id":"fx-004","state":{"sender_name":"Northgate Credit Union","sender_email":"alerts@northgatecu.example","subject":"Action required: unusual sign-in to your account"},"expected":"needs-attention"}
+{"id":"fx-005","state":{"sender_name":"Marcus Bell","sender_email":"marcus.bell@lumenhq.example","subject":"Re: intro call next week? Tues or Weds work"},"expected":"needs-attention"}
+{"id":"fx-006","state":{"sender_name":"Trailhead Outfitters","sender_email":"deals@trailhead.example","subject":"48 hours only: 30% off everything"},"expected":"routine"}
+{"id":"fx-007","state":{"sender_name":"Little Oaks Preschool","sender_email":"office@littleoaks.example","subject":"Permission slip due Thursday for the farm trip"},"expected":"needs-attention"}
+{"id":"fx-008","state":{"sender_name":"Gridline Hosting","sender_email":"billing@gridline.example","subject":"Your receipt for September"},"expected":"routine"}
+{"id":"fx-009","state":{"sender_name":"Gridline Hosting","sender_email":"billing@gridline.example","subject":"Payment failed — update your card to avoid suspension"},"expected":"needs-attention"}
+{"id":"fx-010","state":{"sender_name":"CodeForge","sender_email":"notifications@codeforge.example","subject":"[acme/widgets] CI passed on main"},"expected":"routine"}
+{"id":"fx-011","state":{"sender_name":"Dana Whitfield","sender_email":"dana.whitfield@postbox.example","subject":"quick question about Saturday"},"expected":"needs-attention"}
+{"id":"fx-012","state":{"sender_name":"ConnectIn","sender_email":"digest@connectin.example","subject":"You appeared in 14 searches this week"},"expected":"routine"}
