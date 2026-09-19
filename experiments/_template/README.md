@@ -19,6 +19,8 @@ node --env-file=.env experiments/NN-name/run.ts --real   # data/real/, gitignore
 
 - `data/fixtures/items.jsonl` — synthetic, committed, safe to show.
 - `data/real/items.jsonl` — real, gitignored, never on screen.
+- `data/public/items.jsonl` — only for openly licensed data: committed, with a
+  `LICENSE.md` beside it. Run with `--public`.
 - `raw/` — per-item API responses, gitignored (they echo the item's state).
 
 One item per line: `{"id": "...", "state": {...}, "expected": "label"}`.
