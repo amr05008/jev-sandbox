@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import { readJsonl, writeJsonl, type Item, type RunRecord } from "../../lib/items.ts";
 import { upper95 } from "../../lib/score.ts";
+import { glutenWords } from "./keywords.ts";
 import type { State } from "./questions.ts";
 
 // Second opinion on the reference labels. Open Food Facts' allergen tags turned
@@ -13,36 +14,6 @@ import type { State } from "./questions.ts";
 // two imperfect witnesses, and a short list to adjudicate by hand.
 //
 // node experiments/03-gluten-labels/analyze.ts [--head=nouls]
-
-// JavaScript's \b is ASCII-only even with the u flag, so "blé" followed by a
-// space has no boundary, and \\w stops at "ß". Letter classes do the job.
-const GLUTEN_WORD = new RegExp(
-  "(?<!\\p{L})(" +
-    [
-      "wheat", "bl[ée]e?s?", "froment", "trigo", "tarwe\\p{L}*", "\\p{L}*weizen\\p{L}*", "frumento", "grano (tenero|duro)", "farina di grano",
-      "barley", "orge", "cebada", "gerst\\p{L}*", "orzo", "rye", "seigle", "centeno", "rogge\\p{L}*", "segale",
-      "spelt", "[ée]peautre", "espelta", "dinkel\\p{L}*", "farro", "kamut", "triticale", "durum",
-      "malt", "malted", "malta", "malte", "malz\\p{L}*", "\\p{L}*mout", "moutextract", "seitan",
-      "oats?", "avoine", "avena", "haver\\p{L}*", "hafer\\p{L}*",
-      "semolina", "semoule", "s[ée]mola", "semola", "couscous", "bulgur",
-    ].join("|") +
-    ")(?!\\p{L})",
-  "giu",
-);
-
-// Phrases that contain a gluten word but mean the opposite, or a different plant.
-const NOT_GLUTEN = new RegExp(
-  [
-    "sans gluten", "gluten[- ]?free", "senza glutine", "sin gluten", "sense gluten", "glutenfrei\\p{L}*", "glutenvrij\\p{L}*", "weizenfrei",
-    "grano saraceno", "bl[ée] noir", "sarrasin", "buckwheat", "buchweizen\\p{L}*", "boekweit\\p{L}*", "trigo sarraceno",
-    "s[ée]mola de ma[ií]z", "semoule de ma[iï]s", "semola di mais", "[ée]chalote en semoule",
-  ].join("|"),
-  "giu",
-);
-
-export const glutenWords = (text: string): string[] => [
-  ...new Set([...text.replace(NOT_GLUTEN, " ").matchAll(GLUTEN_WORD)].map((m) => m[0].toLowerCase())),
-];
 
 const head = process.argv.find((a) => a.startsWith("--head="))?.split("=")[1] ?? "nouls";
 const dir = import.meta.dirname;
