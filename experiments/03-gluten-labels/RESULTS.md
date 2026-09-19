@@ -1,144 +1,127 @@
-# 03-gluten-labels — results
+# 03: Can Jev find gluten across six languages?
 
-Run 2026-09-18, model `jev-1.13.0`, SDK `0.6.0`. 3,300 ingredient lists from
-Open Food Facts, 550 per language (en, es, fr, nl, de, it). Public data, so
-examples appear below.
+Run September 18, 2026 · Jev `jev-1.13.0` · SDK `0.6.0`
 
-> **Not medical advice.** Nothing here is validated for deciding what a person
-> with celiac disease can eat. It is one run, against imperfect references.
+**I found no listed-gluten misses on the 1,471 reference-positive labels.**
+That is encouraging, but the first result looked much worse: roughly 7–8% of
+Jev's `safe` calls disagreed with the database. Auditing those disagreements
+changed the story.
 
-## Headline
+The test used 3,300 Open Food Facts ingredient lists: 550 each in English,
+Spanish, French, Dutch, German, and Italian. Examples below are public data.
 
-**Across 1,471 labels that visibly list a gluten ingredient, Jev called none of
-them safe.** With zero misses that puts the 95% upper bound on its miss rate at
-about 0.2%. It got there in six languages with no glossary, at a median 170 ms
-and about $0.035 per 1,000 labels.
+> **Not medical advice.** `safe` is an experimental output label, not a
+> determination that a food is safe to eat. The references were checked with
+> a keyword list and AI-assisted review, not by a dietitian.
 
-The route to that sentence is the more useful story, because the first answer
-the experiment gave was very different.
+## The first score was misleading
 
-## Against the database's own tags, it looks bad
+The initial reference labels came from Open Food Facts' allergen and trace
+tags. Against those tags:
 
-`expected` came from Open Food Facts' allergen and trace tags. Scored that way:
-
-| head | given `safe` | wrong | wrong rate | at confidence ≥ 0.95 |
+| Decision rule | Called `safe` | Disagreed with tags | Disagreement rate | Rate at confidence ≥ 0.95 |
 | --- | --- | --- | --- | --- |
-| one Choice | 1,553 | 114 | 7.3% | 6.8% |
+| One Choice | 1,553 | 114 | 7.3% | 6.8% |
 | Noul per source | 1,574 | 125 | 7.9% | 6.8% |
-| both must agree | 1,572 | 124 | 7.9% | 6.6% |
+| Combined rule | 1,572 | 124 | 7.9% | 6.6% |
 
-A 7% wrongly-safe rate would end the conversation. But look at the last
-column: **raising the confidence bar does nothing.** A model that is wrong
-because it is unsure gets better as you demand more confidence. A flat line
-means it is just as sure when it is "wrong" as when it is right, and that
-points at the labels, not the model.
+Raising the confidence threshold barely changed the disagreement rate. That
+does not prove the reference is wrong—a model can be confidently wrong too—but
+it was a reason to inspect the rows rather than tune the threshold.
 
-## The labels were wrong more often than the model
+## What the audit found
 
-`analyze.ts` adds a second, independent witness: a deliberately dumb
-multilingual keyword list run over the same text. Where the two disagree, the
-rows were read one at a time during analysis (with an AI assistant, not by a
-dietitian).
+`analyze.ts` checks the same text with a multilingual keyword list. I used that
+as a second reference and reviewed disagreements with an AI assistant. These
+are selected cells for the Noul-per-source rule, not the full dataset:
 
-| database says | keyword list | Jev | count | what reading them shows |
+| Database label | Keyword list | Jev | Count | Review finding |
 | --- | --- | --- | --- | --- |
-| safe | sees gluten | unsafe | 486 | The text lists wheat flour, barley malt and so on. The database is missing the tag. **Jev is right.** |
-| safe | sees gluten | safe | 18 | All are oats explicitly marked gluten-free. **Keyword error.** |
-| caution | nothing | safe | 113 | The may-contain warning is not in the ingredient text; OFF stores it in another field. **Nothing to read.** |
-| unsafe | nothing | safe | 11 | All 11 read in full: none lists a gluten ingredient; one says "gluten- und laktosefrei". **The tag is wrong.** |
-| unsafe | sees gluten | unsafe | 861 | Agreement. |
-| safe | nothing | safe | 1,431 | Agreement. |
+| safe | Finds gluten word | unsafe | 486 | Text lists ingredients such as wheat flour or barley malt; the database lacks the tag. |
+| safe | Finds gluten word | safe | 18 | Oats explicitly marked gluten-free; keyword false positives. |
+| caution | No match | safe | 113 | The may-contain warning is absent from the input; OFF stores it separately. |
+| unsafe | No match | safe | 11 | None lists a gluten ingredient; one says "gluten- und laktosefrei". The tag is unsupported by the supplied text. |
+| unsafe | Finds gluten word | unsafe | 861 | Agreement. |
+| safe | No match | safe | 1,431 | Agreement. |
 
-- **25% of products tagged safe visibly contain gluten** (507 of 2,040). Jev
-  flagged 486 of them; nearly all the rest are gluten-free oats.
-- Of the 125 "wrongly safe" calls, 113 were may-contain products whose warning
-  was never in the input, 11 were wrong database tags, and 1 was corn and rice
-  semolina. **None was a gluten ingredient the model failed to see.**
-- Only 195 of 360 may-contain products carry that wording in their ingredient
-  text at all.
+Of 2,040 products assigned `safe` from the database tags, **507 (25%) had a
+gluten keyword in the text**. Not all were genuine gluten sources: 18 were
+explicitly gluten-free oats. Jev called 486 of the 507 `unsafe`.
 
-Lesson, for the second experiment running: **audit the reference before
-trusting the score.** Experiment 01's baseline had failed open during an
-outage; this one's is crowd-sourced and under-tagged.
+The 125 Noul `safe` calls that disagreed with the tags broke down into 113
+missing warnings, 11 tags unsupported by the text, and one corn-and-rice
+semolina keyword error. None was a listed gluten ingredient missed in review.
+Only 195 of the 360 products tagged may-contain included that warning in their
+ingredient text.
 
-## Where a model beats a keyword list
+This repeated the lesson from [experiment 01](../01-email-triage/RESULTS.md):
+**check the answer key before trusting the score.** Missing tags and missing
+input text are different problems from a model failing to read an ingredient.
 
-Every one of the 19 cases where the keyword list saw gluten and Jev said safe
-was the keyword list's mistake:
+## Where the model beat the keyword list
+
+The keyword list matched 1,490 labels. Jev called 19 of them `safe`; review
+found all 19 were keyword errors, leaving 1,471 reference-positive labels and
+no observed misses. Examples:
 
 - `Copos de avena integral sin gluten`, `haver (glutenvrij)`, `Glutenfreie
-  Vollkorn-Haferflocken`, `farine d'avoine sans gluten`: gluten-free oats, in
-  five languages. The question asked about oats "not described as
-  gluten-free", and the model honoured that everywhere.
+  Vollkorn-Haferflocken`, and `farine d'avoine sans gluten`: gluten-free oats.
+  Jev followed the question's explicit exception for them.
 - `sémola de maíz, sémola de arroz`: corn and rice semolina.
 
-Going the other way, Jev flagged things the keywords cannot: `farina tipo "0"`,
-`Farina 00` and Dutch `bloem` (flour, meaning wheat flour, with the word wheat
-absent), and `aroma's (bevat GLUTEN)`.
+Jev also flagged ingredients the keywords missed: `farina tipo "0"`,
+`Farina 00`, Dutch `bloem` (flour, without the word wheat), and
+`aroma's (bevat GLUTEN)`.
 
-A footnote on the keyword list itself: its first two versions silently missed
-`blé` and `Hartweizengrieß`, because JavaScript's `\b` and `\w` are ASCII-only.
-Multilingual keyword matching is harder to get right than it looks, which is
-part of the case for a model here.
+The keyword list needed fixes of its own. Its first two versions missed `blé`
+and `Hartweizengrieß` because JavaScript's `\b` and `\w` are ASCII-only.
+Multilingual keyword matching was less straightforward than it looked.
 
-## Where it is over-cautious
+## Where Jev was too cautious
 
-255 labels had no gluten keyword and Jev still did not say safe: 113 called
-caution, 142 unsafe or uncertain. Reading a sample of the 142: roughly half are
-real catches like the ones above, or may-contain statements that name wheat; a
-quarter are arguable (`glutenfreie Weizenstärke`, gluten-free wheat starch);
-a quarter are over-caution on maltodextrin, maltose syrup or unnamed starch,
-plus a few plain errors (rye on a spiced butter). That is the cheap direction
-to be wrong in, and the natural set to hand to a fallback model.
+Jev withheld `safe` on 255 labels with no gluten keyword: 113 were `caution`,
+142 were `unsafe` or `uncertain`. In a reviewed sample of those 142, roughly
+half were useful catches or warnings; a quarter were debatable cases such as
+gluten-free wheat starch; and a quarter were over-caution or plain errors,
+including maltodextrin, maltose syrup, unnamed starch, and a rye flag on spiced
+butter. Those proportions describe the reviewed sample, not all 142 labels.
 
-One design wrinkle: "may contain wheat" makes the wheat question fire, so the
-code rule calls it unsafe rather than caution (110 of 360 may-contain
-products). Over-severe, not dangerous, and fixable by asking the source
-questions about ingredients only.
+The rule also called 110 of 360 may-contain products `unsafe` rather than
+`caution`: "may contain wheat" triggered the wheat question. Asking about
+*ingredients*, separately from warnings, is a follow-up worth testing.
 
-## One Choice or a Noul per source?
+## Did splitting the question help?
 
-On this task it barely matters: the two heads agree on what is safe (1,553 vs
-1,574, nearly the same items), and requiring both changes almost nothing. That
-differs from experiment 02, where splitting the question was the whole win.
-The likely reason is that "does this list contain a gluten source" is already
-one narrow judgment; "does this email matter" was several. The Nouls do earn
-their place another way: they say *which* source fired, which a product needs
-in order to explain itself.
+Not much here. One Choice and one Noul per source produced similar `safe`
+counts (1,553 and 1,574); the combined rule changed little. Unlike email
+importance, identifying a gluten source is already a narrow judgment.
 
-## By language
+The split questions still help explain a verdict: they identify which source
+triggered it. This result suggests a useful distinction to test, not a general
+rule that decomposition never helps ingredient reading.
 
-Wrongly-safe rate against database tags ran from 3% (en) to 10% (fr), which
-tracks how well each language's entries are tagged, not how well the model
-reads them: the keyword-visible miss count is zero in all six.
+## Speed, cost, and limits
 
-## Speed and cost
+- Median latency: 170 ms; 95th percentile: 282 ms, with seven questions per
+  call and eight concurrent calls.
+- About 830 input tokens per label. Estimated cost: **$0.035 per 1,000 labels**,
+  or $0.12 for the run, at TypeSafe's cookbook rate of $0.042 per million input
+  tokens.
+- Zero misses on 1,471 reference-positive labels gives a rough 95% upper bound
+  of **0.2%**, conditional on the reference and sampling assumptions. It is not
+  a bound on the chance of telling someone an unsafe food is safe.
+- A gluten source missed by the keywords, Jev, and database could escape this
+  audit. There was no expert review or independent validation set.
+- The keyword-visible miss count was zero in all six languages. Disagreement
+  with database tags ranged from 3% to 10%; that alone cannot rank language
+  performance.
+- These were typed ingredient lists, not photos. Warnings elsewhere on a
+  package were often absent. Thresholds were fixed in advance but not validated
+  on a fresh sample.
 
-p50 170 ms, p95 282 ms per label, seven questions per call, 8 calls in flight.
-830 input tokens per label. The whole 3,300-label run cost about $0.12 at the
-$0.042 per 1M input tokens quoted in TypeSafe's cookbooks.
+## What I tried next
 
-## What this does not show
-
-- **The reference for the headline is a keyword list plus reading the
-  disagreements, not expert review.** A
-  gluten ingredient that the keyword list misses *and* Jev misses *and* the
-  database misses would be invisible here. The 0.2% bound is conditional on
-  that not happening.
-- **Clean typed text, not OCR.** A phone photo of a curved package produces
-  dropped characters, cut-off lines and merged columns. A truncated list read
-  as "safe" is the most dangerous failure for a label scanner and is untested.
-- **Ingredient list only.** May-contain statements often sit outside it. A real
-  scan has to capture them, or "safe" means less than it says.
-- One run, one model version, thresholds fixed in advance but never validated
-  on a second sample.
-- No comparison yet against the LLM a production scanner would otherwise use.
-
-## Next questions
-
-1. **OCR noise:** corrupt these same labels the way bad photos do, and add a
-   Noul for "is this text complete enough to judge?" as the fallback trigger.
-2. **Head-to-head with an LLM** on the 255 not-safe-without-a-keyword cases and a sample of
-   agreements: where do they differ, and who is right?
-3. **The full label, not just the list:** include may-contain and
-   gluten-free-claim text and score the three-way verdict properly.
+[Experiment 04](../04-ocr-noise/RESULTS.md) adds synthetic text damage.
+[Experiment 05](../05-llm-side-by-side/RESULTS.md) compares Jev with a scanner's
+production LLM request. Testing complete package labels—including warnings and
+gluten-free claims—remains a separate step.

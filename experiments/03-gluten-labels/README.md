@@ -1,17 +1,18 @@
-# 03-gluten-labels
+# 03: Gluten labels
+
+[Results →](RESULTS.md)
 
 > **Not medical advice.** This measures a model against a crowd-sourced
 > database and a keyword list. Nothing here is validated for deciding what a
 > person with celiac disease can eat.
 
-**Question:** reading only a product's ingredient list, in six languages, how
-often does Jev call a product safe when it is not? And does one three-way
-Choice or one Noul per gluten source do better?
+**Question:** does Jev miss listed gluten across six languages? Does one
+three-way Choice or a separate yes/no score (Noul) per source work better?
 
-**Why this metric:** the two errors are not equal. Calling a safe product
-unsafe costs someone a snack. Calling an unsafe product safe makes them ill.
-So the headline is not agreement; it is how often `safe` was given wrongly,
-with a confidence bound, because a rare-event claim needs a big sample.
+**Why this metric:** a false `safe` can have more serious consequences than an
+unnecessary warning. I measure it separately from overall agreement, with a
+confidence bound. The [results](RESULTS.md) distinguish disagreement with the
+database from missed ingredients.
 
 **Items:** 3,300 real ingredient lists from Open Food Facts' bulk export, a
 seeded random sample of 550 per language (en, es, fr, nl, de, it): 150 tagged
@@ -19,9 +20,10 @@ with gluten as an allergen, 60 with gluten as a trace, 340 with neither (90 of
 those carrying a gluten-free label). `expected` comes from OFF's tags. The
 data is public, so it is committed (`data/public/`, ODbL).
 
-**Both shapes in one call.** Questions are evaluated in isolation, so the
-Choice and the six Nouls are asked together and read three ways ("heads"):
-`choice`, `nouls`, and `both` (safe only if the two agree).
+**Three decision rules from one call:** `choice`, `nouls`, and `both`. The
+combined rule requires the Choice to select `safe` and all Noul scores to be
+below 0.2; unlike the standalone Choice rule, it does not apply the Choice's
+0.6 confidence cutoff.
 
 ## Run
 

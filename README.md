@@ -1,56 +1,56 @@
 # jev-sandbox
 
-A test bench for one question: **where does a System One model beat
-prompt-and-parse?**
+I built this repo to test a practical question: **when can a small decision
+model do the job I'd otherwise give an LLM?**
 
 [Jev](https://docs.typesafe.ai/introduction) is TypeSafe's decision model. You
-send it state and typed questions (Choice, Score, Noul) and get back typed
-answers with probabilities, no text to parse. This repo runs small, repeatable
-experiments against it and records what happened.
+send it data and typed questions; it returns answers and probabilities rather
+than text to parse. These tests use **Choice** questions (pick a named option)
+and **Nouls** (score a yes/no question from 0 to 1).
+
+I tested email triage and gluten detection in ingredient lists. Each experiment
+records the setup, results, limits, and what I'd try next.
+
+## What I learned
+
+- **Email routing looks promising.** With separate questions about why an
+  email might matter and some recipient context, Jev decided 121 of 129
+  emails outright. None of the emails it called routine disagreed with the
+  existing classifier. This still needs a fresh sample.
+  [Email results →](experiments/02-reasons-to-care/RESULTS.md)
+- **On ingredient lists, Jev held up against a production LLM request.** I
+  found no listed-gluten misses from Jev or Claude Opus 4.8 in the 996-label
+  comparison. In this test, Jev's median response was 17× faster, at an
+  estimated 240× lower cost.
+  [Side-by-side results →](experiments/05-llm-side-by-side/RESULTS.md)
+- **Instructions explained most disagreements.** Adding the LLM's caution
+  policy for vague ingredients raised verdict agreement from 76% to 90%.
+  Whether that policy is useful is a separate question.
+  [Policy results →](experiments/06-vague-ingredients/RESULTS.md)
+- **Missing text was harder than garbled text.** Both models called some
+  truncated labels `safe` after the cut removed the gluten ingredient.
+  [Damaged-label results →](experiments/04-ocr-noise/RESULTS.md)
+- **Check what you're scoring against.** An email-classifier outage and
+  incomplete food-database tags both made good answers look wrong.
+  [Reference-label audit →](experiments/03-gluten-labels/RESULTS.md)
+
+> **Not medical advice.** The gluten experiments test model behavior, not
+> whether a food is safe to eat. `safe` is an experimental output label, not a
+> recommendation for someone with celiac disease.
 
 ## What's here
 
-| path | what it is |
+| Path | Contents |
 | --- | --- |
-| `experiments/` | One folder per experiment: questions, fixtures, results. Start at [`experiments/README.md`](experiments/README.md) |
-| `lib/` | Shared client, runner and scoring: agreement, confusion, confidence gating, ranking AUC, latency, tokens, and a table for the one error that is expensive, with confidence bounds. One call can be read several ways ("heads") |
-| `protocols/` | How each experiment was run, in enough detail to repeat it |
-| `scripts/` | Data preparation for specific experiments |
-| `.claude/skills/typesafe-ai/` | TypeSafe's agent skill, a pinned and audited copy. See its `AUDIT.md` |
+| [`experiments/`](experiments/README.md) | Six experiments, each with questions, data instructions, and results |
+| `lib/` | Shared client, runner, and scoring for agreement, confidence thresholds, latency, cost inputs, and error bounds |
+| `protocols/` | Detailed procedures for individual experiments |
+| `scripts/` | Dataset preparation |
+| [`.claude/skills/typesafe-ai/`](.claude/skills/typesafe-ai/AUDIT.md) | A pinned, audited copy of TypeSafe's agent skill |
 
-## What the experiments have found so far
+## Try it
 
-Six experiments, two domains (email triage, gluten on ingredient labels). Each
-has its own `RESULTS.md`; the index is [`experiments/README.md`](experiments/README.md).
-
-- **It works as a router before it works as a classifier.** On real email, Jev
-  settled 72% of mail alone with full agreement, and sent the rest onward.
-- **On a narrow judgment it matched a frontier LLM.** Reading ingredient lists
-  in six languages, Jev and Claude Opus 4.8 both missed no listed gluten. Jev
-  was 17× faster (0.17 s against 2.9 s) and about 240× cheaper.
-- **Where they differed, it was policy, not ability,** and the policy could be
-  moved into questions plus a line of code, which then applies it evenly.
-- **Noise does not hurt it; missing text does.** Neither model can call a label
-  safe from text that was cut off before the gluten. That check belongs in code.
-- **Splitting a question helps only when it hides several judgments,** not
-  several examples of one. It was decisive once and irrelevant three times.
-- **Audit the reference first.** Twice the labels being scored against were
-  wrong more often than the model.
-
-> The gluten experiments are **not medical advice** and are not validated for
-> deciding what a person with celiac disease can eat.
-
-## Data rules
-
-The script is the artifact; private data is not. Private data lives under
-`data/real/` and `raw/`, both gitignored, and its `RESULTS.md` carries
-aggregate numbers only. Fixtures are synthetic and committed. Datasets built
-from openly licensed sources live under `data/public/` with a licence note and
-are committed. Runs default to fixtures; `--real` and `--public` are explicit.
-
-## Setup
-
-Node 24+ (runs TypeScript directly, no build step).
+Requires Node 24+ (runs TypeScript directly; no build step).
 
 ```sh
 npm ci --ignore-scripts
@@ -60,8 +60,21 @@ node --env-file=.env experiments/01-email-triage/run.ts             # synthetic 
 node --env-file=.env experiments/03-gluten-labels/run.ts --public    # 3,300 public labels, ~$0.12
 ```
 
-Experiment 05 also needs `ANTHROPIC_API_KEY` (use a dedicated, spend-capped
-key) and a local checkout of the scanner it compares against.
+[Experiment 05](experiments/05-llm-side-by-side/README.md) also needs
+`ANTHROPIC_API_KEY` (use a dedicated, spend-capped key) and a local checkout of
+the scanner it compares against. Cost estimates use the rates recorded in the
+results, not a guarantee of current pricing.
 
-`@typesafe-ai/sdk` is pinned to an exact, audited version. Bump it
-deliberately, never with a range.
+`@typesafe-ai/sdk` is pinned to an exact, audited version. Update it
+deliberately, not with a version range.
+
+## Data and privacy
+
+The scripts are public; private inputs and raw responses are not.
+
+- Private datasets live in gitignored `data/real/` directories. Their results
+  contain aggregates only—no real email examples or recipient context.
+- Raw responses live in gitignored `raw/` directories.
+- Public datasets are committed under `data/public/` with license notes.
+- Default runs use fixtures: synthetic emails or, for experiment 03, a small
+  subset of the public labels. `--real` and `--public` are explicit opt-ins.

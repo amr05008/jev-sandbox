@@ -1,18 +1,19 @@
-# 06-vague-ingredients
+# 06: Vague ingredients
 
-> **Not medical advice.** See experiment 03.
+[Results →](RESULTS.md)
 
-**Question:** experiment 05 found that the production LLM and Jev tie on
-catching gluten and differ on policy: the LLM says `caution` on 43% of clean
-labels, mostly because an unspecified flavouring "could hide gluten". Can Jev
-carry that policy if asked, and how closely does it then match the LLM?
+> **Not medical advice.** See [experiment 03](../03-gluten-labels/README.md).
 
-**Items:** the same 996 labels experiment 05 sent to the LLM, paired by id. No
-new LLM spend: its replies are already on disk.
+**Question:** experiment 05 found that the LLM's vague-ingredient policy
+explained most verdict disagreements. Can Jev reproduce that policy? This
+tests agreement, not whether the policy is appropriate.
+
+**Items:** experiment 05's 996 labels, paired by ID with its saved LLM replies.
+No new LLM calls.
 
 **Rule:** experiment 03's rule, plus: a would-be `safe` becomes `caution` when
 a vague-ingredient question fires and no gluten-free claim covers it. Two
-shapes are compared: four narrow questions (flavouring, spice, starch, other)
+shapes are compared: four narrow questions (flavoring, spice, starch, other)
 and one compound question.
 
 ## Run

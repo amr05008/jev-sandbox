@@ -1,13 +1,14 @@
-# 05-llm-side-by-side
+# 05: Jev and an LLM, side by side
 
-> **Not medical advice.** See experiment 03.
+[Results →](RESULTS.md)
 
-**Question:** how does Jev compare, on the same labels, with the LLM a real
-label scanner uses in production: on catching gluten, on how often it commits
-to an answer, on speed, and on cost?
+> **Not medical advice.** See [experiment 03](../03-gluten-labels/README.md).
+
+**Question:** on the same labels, how does Jev compare with a scanner's
+production LLM request for gluten detection, verdicts, speed, and cost?
 
 **The LLM side** is [GlutenOrNot](https://github.com/amr05008/glutenornot.com)'s
-production request, reproduced exactly: its prompt constant, Claude Opus 4.8,
+production request: its prompt constant, Claude Opus 4.8,
 `max_tokens` 4096, the prompt cached, the label passed as `### OCR Text:`. The
 prompt is imported from a local checkout at run time (pinned here at commit
 `0c07b4d`), not copied into this repo, and replies are parsed with the
@@ -20,11 +21,10 @@ scanner's own `parseClaudeResponse`.
 - `cuts`: experiment 04's 300 gluten labels with the last half cut off, and the
   same 300 with the first half cut off (`data/public/sample-cuts.json`).
 
-**Why 1,000 and not 3,300.** Speed and cost settle in a hundred calls. Rates
-settle to ±2–3 points at a thousand. The rare costly error does not settle at
-either size: if both models miss about nothing, telling 0.1% from 0.3% takes
-tens of thousands of labels. The extra 2,300 calls would have bought a tighter
-bound on a tie.
+**Why about 1,000 labels:** enough for a first comparison of latency, cost,
+and common verdict differences. Neither 1,000 nor 3,300 can reliably distinguish
+very low miss rates. A safety validation would need a larger, independently
+reviewed dataset.
 
 ## Run
 
