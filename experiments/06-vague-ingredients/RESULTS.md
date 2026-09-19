@@ -1,67 +1,82 @@
-# 06-vague-ingredients — results
+# 06: Can Jev reproduce the LLM's caution policy?
 
-Run 2026-09-18, model `jev-1.13.0`. 996 labels paired with experiment 05's
-Claude Opus 4.8 replies (GlutenOrNot's production prompt, commit `0c07b4d`).
+Run September 18, 2026 · Jev `jev-1.13.0` · 996 labels paired with experiment
+05's Claude Opus 4.8 replies (GlutenOrNot prompt, commit `0c07b4d`)
 
-> **Not medical advice.**
+**Adding the policy raised verdict agreement from 76% to 90%.** Jev also
+withheld `safe` on 96% of the LLM's `caution` cases, up from 31%. Median latency
+remained about 170 ms.
 
-## Headline
+This tests whether Jev can reproduce a policy, not whether the policy is right.
 
-**Yes. One policy, written as questions plus a line of code, takes Jev from
-76% to 90% agreement with the LLM's verdicts**, and from sharing 31% of its
-cautions to sharing 96%. It still answers in 170 ms.
+> **Not medical advice.** Agreement between models does not establish whether
+> a food is safe to eat.
 
-| Jev rule | same verdict as the LLM | of the LLM's `caution`s, Jev also withholds `safe` | LLM `safe`, Jev not | Jev `safe`, LLM not |
+## What I added
+
+I added questions about unspecified flavorings, spices, starches, and other
+ingredients to experiment 03's rule. A would-be `safe` becomes `caution` if any
+score is ≥ 0.5 and the gluten-free-claim score is < 0.5. I tested four separate
+questions against one compound question.
+
+| Jev rule | Same verdict as LLM | LLM `caution` cases where Jev withholds `safe` | LLM `safe`, Jev not | Jev `safe`, LLM not |
 | --- | --- | --- | --- | --- |
-| experiment 03's rule | 75.7% | 31.3% | 6 | 206 |
-| + four vague-ingredient questions | 90.0% | 95.7% | 57 | 13 |
-| + one compound question | 90.0% | 94.3% | 53 | 17 |
+| Experiment 03's rule, rerun here | 75.7% | 31.3% | 6 | 206 |
+| + Four vague-ingredient questions | 90.0% | 95.7% | 57 | 13 |
+| + One compound question | 90.0% | 94.3% | 53 | 17 |
 
-| LLM ↓ / Jev with policy → | unsafe | caution | safe |
+For agreement, Jev's `uncertain` is grouped with `caution`, since the LLM has
+no `uncertain` label. With the four-question policy:
+
+| LLM ↓ / Jev → | unsafe | caution | safe |
 | --- | --- | --- | --- |
 | unsafe | 424 | 0 | 0 |
 | caution | 30 | 257 | 13 |
 | safe | 2 | 55 | 215 |
 
-(Jev's `uncertain` is counted with `caution`, since the LLM has no such label.)
+## Where they still differed
 
-## Where they still differ
+Of 55 labels the LLM called `safe` and Jev called `caution`, 51 triggered a
+vague-ingredient question at high confidence. Ingredients included `aroma`,
+`sirop de glucose`, and `Curry`, which the LLM flagged elsewhere. That suggests
+uneven policy application, though surrounding text can matter.
 
-**The LLM applies its own policy unevenly; the code rule does not.** In 51 of
-the 55 labels the LLM called `safe` and Jev called `caution`, a
-vague-ingredient question fired at high confidence on exactly the ingredients
-the LLM flags elsewhere: `aroma`, `aromas`, `sirop de glucose`, `Curry`. Same
-ingredient, different verdict, depending on the label. A rule in code gives the
-same answer every time, which is the property a user learns to trust.
+Putting the policy in code makes the **mapping from scores to verdicts**
+consistent and inspectable. It does not make the model's ingredient judgments
+deterministic or necessarily correct.
 
-**The 13 the other way** are mostly a distinction Jev was not asked to make:
-the LLM treats "gluten-free oat flour" as an ingredient-level claim that does
-not cover the rest of the product, while Jev's single gluten-free-claim
-question reads it as a claim. A narrower question would separate the two.
+The 13 disagreements in the other direction mostly concerned the scope of a
+gluten-free claim. The LLM treated "gluten-free oat flour" as a claim about one
+ingredient, not the whole product. Jev's broad claim question did not reliably
+make that distinction. A narrower question is the next thing to test.
 
-## How often the policy fires
+## How broad is this policy?
 
-| flavouring | spice | starch | other | compound | gluten-free claim |
+Share of the 996 labels scoring ≥ 0.5 on each question:
+
+| Flavoring | Spice | Starch | Other | Compound question | Gluten-free claim |
 | --- | --- | --- | --- | --- | --- |
 | 52% | 23% | 30% | 8% | 64% | 4% |
 
-An unnamed flavouring appears on **half of all labels**. That is the real size
-of this policy: adopted as written, it withholds `safe` from most packaged
-food. Worth knowing before choosing it.
+Flavoring alone triggered on half this sample. The categories overlap and
+only affect otherwise-`safe` verdicts without a gluten-free claim. This is a
+broad policy, but not evidence that half of all packaged food needs a caution.
 
-## Split or compound?
+## Did splitting the question help?
 
-No difference (90.0% both). This is the third experiment running where splitting
-a question did not help, against one (experiment 02) where it was the whole
-win. The pattern: splitting helps when the original question hides several
-*different judgments* ("does this email matter?"), not when it lists several
-*examples of one judgment* ("is any ingredient's source unnamed?"). The split
-version still earns its keep by saying which ingredient triggered the caution.
+Both versions reached 90.0% agreement. Splitting also made little difference
+in experiments 03 and 04, unlike [email triage](../02-reasons-to-care/RESULTS.md).
+My hypothesis: splitting helps more when a question hides *different
+judgments* than when it lists *examples of one judgment*. Separate questions
+still help explain what triggered a caution.
 
-## What this does not show
+## Limits and next steps
 
-- Agreement with the LLM is not correctness. Nothing here says the policy is
-  right, only that Jev can carry it.
-- Thresholds (0.5 and 0.5) were fixed before the run and not tuned.
-- One run; experiment 02 put run-to-run noise at a few labels in a hundred near
-  a threshold.
+- The policy was chosen after inspecting experiment 05 and tested on the same
+  labels, not a held-out sample.
+- New thresholds were fixed before this run, with no later tuning.
+- One run; repeatability was not measured.
+
+Next: distinguish ingredient-level from product-level gluten-free claims, then
+test the revised questions on new labels. Separately, review whether this
+caution policy belongs in the product at all.

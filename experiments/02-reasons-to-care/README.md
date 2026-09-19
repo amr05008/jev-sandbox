@@ -1,12 +1,13 @@
-# 02-reasons-to-care
+# 02: Reasons to care
 
-**Question:** experiment 01 asked one two-way Choice and left 11 of 23
-needs-attention emails in `uncertain`. Does one narrow Noul per *reason an
-email could matter*, combined in code, decide more of them outright?
+[Results →](RESULTS.md)
 
-**Items:** experiment 01's, unchanged (`../01-email-triage/data/`). Same
-labels, same caveats: `expected` is agreement with the baseline LLM
-classifier, not truth.
+**Question:** experiment 01 left 11 of 23 needs-attention emails uncertain.
+Can separate yes/no questions (Nouls) about *why an email matters*, combined
+in code, resolve more of them without calling important mail routine?
+
+**Items:** experiment 01's 129 emails, unchanged (`../01-email-triage/data/`).
+The reference is the baseline LLM's judgment, not ground truth.
 
 **Rule, fixed before the first run:** flag if any reason ≥ 0.5; routine if
 every reason < 0.2; otherwise uncertain. The model never sees the rule.

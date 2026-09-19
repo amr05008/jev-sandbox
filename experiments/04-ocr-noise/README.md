@@ -1,21 +1,24 @@
-# 04-ocr-noise
+# 04: OCR noise
 
-> **Not medical advice.** See experiment 03.
+[Results →](RESULTS.md)
 
-**Question:** experiment 03 used clean, typed ingredient lists. A scanner gets
-text from a phone photo. When that text is damaged, does Jev still catch the
-gluten, and can it tell when a list is too damaged to call safe?
+> **Not medical advice.** See [experiment 03](../03-gluten-labels/README.md).
 
-**Items:** 600 labels from experiment 03 where the database and the keyword
-witness agree (300 list gluten, 300 do not; 50 + 50 per language), each under
-10 kinds of damage: clean, 5/10/20% character noise, narrow-label line breaks,
-a nutrition table bleeding in, the last 30% or 50% cut off, the first 50% cut
-off, and a cut plus noise. 6,000 items, seeded, committed (`data/public/`).
+**Question:** can Jev still detect gluten when ingredient text is garbled or
+cut off? Can it tell when too much is missing to judge? This simulates errors
+from OCR (text extracted from a photo); it does not test real photos.
+
+**Items:** 600 labels from experiment 03 where the database and keyword
+check agree (300 list gluten, 300 do not; 50 + 50 per language), each under
+10 conditions: a clean control, 5/10/20% character noise, narrow-label line
+breaks, a nutrition table mixed in, the last 30% or 50% cut off, the first 50%
+cut off, and a cut plus noise. 6,000 items, seeded, committed (`data/public/`).
 
 **Rule:** the same source questions and thresholds as experiment 03, plus a
-gate: `safe` is only allowed on text that looks complete. Finding gluten in a
-damaged list can be trusted; failing to find it cannot. Two gates are compared:
-one compound completeness question, and the same check split in three.
+gate: `safe` is only allowed on text that looks complete. A damaged list can
+still show a gluten source; finding none does not establish that the full list
+has none. I compare one compound completeness question with three separate
+questions.
 
 ## Run
 
