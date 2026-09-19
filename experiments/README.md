@@ -9,6 +9,7 @@ results. Shared plumbing (client, runner, scoring) is in `../lib/`.
 | [02-reasons-to-care](02-reasons-to-care/) | Does one Noul per reason to care, plus a few lines of personal context, beat a single Choice? | run 2026-09-18 | [Yes: confident misses 2 → 0, 94% of mail decided outright, 97 of 97 routine calls agreed.](02-reasons-to-care/RESULTS.md) |
 | [03-gluten-labels](03-gluten-labels/) | Reading ingredient lists in six languages, how often does Jev call an unsafe product safe? | run 2026-09-18 | [0 misses on 1,471 labels that visibly list gluten (≤0.2% at 95%). The database's own tags were wrong far more often than the model.](03-gluten-labels/RESULTS.md) |
 | [04-ocr-noise](04-ocr-noise/) | When the label text is damaged the way phone photos damage it, is gluten still caught, and can the model tell when it cannot judge? | run 2026-09-18 | [Noise: no effect (99% flagged at 20% corruption). Truncation: the real risk, and half of missing starts are invisible in the text.](04-ocr-noise/RESULTS.md) |
+| [05-llm-side-by-side](05-llm-side-by-side/) | Same labels, Jev against a real scanner's production LLM request (Claude Opus 4.8): gluten caught, willingness to commit, speed, cost? | run 2026-09-18 | [A tie on catching gluten (0 misses each). Jev 17× faster and ~240× cheaper. The LLM says caution on 43% of clean labels, by prompt policy. Both call truncated labels safe.](05-llm-side-by-side/RESULTS.md) |
 
 ## Add an experiment
 
