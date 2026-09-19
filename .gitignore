@@ -8,9 +8,11 @@
 *.jsonl
 *.tsv
 
-# Except synthetic fixtures, which contain no real data.
+# Except synthetic fixtures, which contain no real data, and public datasets
+# built from openly licensed sources (each carries its own licence note).
 !**/data/fixtures/**/*.jsonl
 !**/data/fixtures/**/*.csv
+!**/data/public/**/*.jsonl
 
 # Secrets
 .env

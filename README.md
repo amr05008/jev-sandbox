@@ -20,10 +20,11 @@ experiments against it and records what happened.
 
 ## Data rules
 
-The script is the artifact; the data is not. Real data lives under
-`data/real/` and `raw/`, both gitignored. Fixtures are synthetic and committed.
-Runs default to fixtures; real data needs an explicit `--real`. `RESULTS.md`
-files carry aggregate numbers only.
+The script is the artifact; private data is not. Private data lives under
+`data/real/` and `raw/`, both gitignored, and its `RESULTS.md` carries
+aggregate numbers only. Fixtures are synthetic and committed. Datasets built
+from openly licensed sources live under `data/public/` with a licence note and
+are committed. Runs default to fixtures; `--real` and `--public` are explicit.
 
 ## Setup
 

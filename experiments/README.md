@@ -7,6 +7,7 @@ results. Shared plumbing (client, runner, scoring) is in `../lib/`.
 | --- | --- | --- | --- |
 | [01-email-triage](01-email-triage/) | Can Jev match an LLM email classifier from headers alone? | run 2026-09-18 | [As a router, yes: 72% settled alone at 100% agreement. As a classifier, no: 43% recall.](01-email-triage/RESULTS.md) |
 | [02-reasons-to-care](02-reasons-to-care/) | Does one Noul per reason to care, plus a few lines of personal context, beat a single Choice? | run 2026-09-18 | [Yes: confident misses 2 → 0, 94% of mail decided outright, 97 of 97 routine calls agreed.](02-reasons-to-care/RESULTS.md) |
+| [03-gluten-labels](03-gluten-labels/) | Reading ingredient lists in six languages, how often does Jev call an unsafe product safe? | run 2026-09-18 | [0 misses on 1,471 labels that visibly list gluten (≤0.2% at 95%). The database's own tags were wrong far more often than the model.](03-gluten-labels/RESULTS.md) |
 
 ## Add an experiment
 

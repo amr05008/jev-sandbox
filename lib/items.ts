@@ -6,11 +6,14 @@ export interface Item<S = unknown> {
   id: string;
   state: S;
   expected?: string;
+  /** Optional slice to break results down by, such as a language. */
+  group?: string;
 }
 
 /** One judged item, written to raw/ (gitignored: it echoes the item's state). */
 export interface RunRecord {
   id: string;
+  group?: string;
   expected?: string;
   predicted: string;
   confidence?: number;
@@ -43,14 +46,15 @@ export function writeJsonl(path: string, rows: readonly unknown[]): void {
 
 /**
  * Pick the dataset from argv. Defaults to fixtures so a bare run, or a run on
- * camera, never touches real data. Real data requires an explicit `--real`.
+ * camera, never touches real data. `--real` is private and gitignored;
+ * `--public` is a committed dataset built from an openly licensed source.
  */
 export function datasetPath(experimentDir: string, argv: readonly string[]): {
   dir: string;
   path: string;
-  real: boolean;
+  name: "real" | "public" | "fixtures";
 } {
-  const real = argv.includes("--real");
-  const dir = `${experimentDir}/data/${real ? "real" : "fixtures"}`;
-  return { dir, path: `${dir}/items.jsonl`, real };
+  const name = argv.includes("--real") ? "real" : argv.includes("--public") ? "public" : "fixtures";
+  const dir = `${experimentDir}/data/${name}`;
+  return { dir, path: `${dir}/items.jsonl`, name };
 }
