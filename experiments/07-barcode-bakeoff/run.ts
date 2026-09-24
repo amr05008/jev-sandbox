@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { makeClient } from "../../lib/client.ts";
 import { readJsonl } from "../../lib/items.ts";
 import { CLAUDE_MODELS, EST_PER_CALL, askClaude, askJev, e2Rule, type ClaudeEngine } from "./engines.ts";
+import { stratifiedOrder } from "./order.ts";
 import { loadScanner, type Product } from "./scanner.ts";
 
 // The bake-off runner. Without --confirm it prints the plan and a cost estimate
@@ -50,8 +51,7 @@ function loadItems(): Item[] {
   if (set === "d2") {
     const path = `${dir}/data/public/records.jsonl`;
     if (!existsSync(path)) throw new Error("run fetch-records.ts first");
-    return readJsonl<any>(path)
-      .filter((r) => r.product)
+    return stratifiedOrder(readJsonl<any>(path).filter((r) => r.product))
       .map((r) => ({ id: r.id, product: r.product, group: r.group, samples: { claude: 1, jev: 1 } }));
   }
   throw new Error("--set must be d1 or d2");
