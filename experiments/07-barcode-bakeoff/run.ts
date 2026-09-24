@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { makeClient } from "../../lib/client.ts";
 import { readJsonl } from "../../lib/items.ts";
-import { CLAUDE_MODELS, EST_PER_CALL, askClaude, askJev, e2Rule, type ClaudeEngine } from "./engines.ts";
+import { CLAUDE_MODELS, EST_PER_CALL, JEV_ENGINES, askClaude, askJev, isJev, type ClaudeEngine } from "./engines.ts";
 import { stratifiedOrder } from "./order.ts";
 import { loadScanner, type Product } from "./scanner.ts";
 
@@ -10,7 +10,7 @@ import { loadScanner, type Product } from "./scanner.ts";
 // they arrive, so a re-run resumes instead of re-spending.
 //
 // node --env-file=.env experiments/07-barcode-bakeoff/run.ts --scanner=/path/to/checkout --set=d1|d2
-//      [--engines=opus,haiku,jev] [--limit=N] [--concurrency=4] [--confirm]
+//      [--engines=opus,haiku,jev,jev-v2] [--limit=N] [--concurrency=4] [--confirm]
 
 const flag = (name: string, fallback?: string): string => {
   const v = process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
@@ -29,7 +29,7 @@ const dir = import.meta.dirname;
 if (s.dirty && !has("allow-dirty")) {
   throw new Error("the scanner checkout has uncommitted changes under api/ or the evals; commit them so the run is pinned to a commit");
 }
-for (const e of engines) if (!(e in CLAUDE_MODELS) && e !== "jev") throw new Error(`unknown engine ${e}`);
+for (const e of engines) if (!(e in CLAUDE_MODELS) && !isJev(e)) throw new Error(`unknown engine ${e}`);
 
 interface Item {
   id: string;
@@ -64,12 +64,12 @@ const plan = engines.map((engine) => {
   const out = outFor(engine);
   const done = new Set(existsSync(out) ? readJsonl<{ key: string }>(out).map((r) => r.key) : []);
   const tasks = items.flatMap((item) =>
-    Array.from({ length: engine === "jev" ? item.samples.jev : item.samples.claude }, (_, k) => ({ item, k, key: `${item.id}#${k}` })),
+    Array.from({ length: isJev(engine) ? item.samples.jev : item.samples.claude }, (_, k) => ({ item, k, key: `${item.id}#${k}` })),
   ).filter((t) => !done.has(t.key));
-  return { engine, out, tasks, done: done.size, estimate: tasks.length * EST_PER_CALL[engine as ClaudeEngine | "jev"] };
+  return { engine, out, tasks, done: done.size, estimate: tasks.length * EST_PER_CALL[isJev(engine) ? "jev" : (engine as ClaudeEngine)] };
 });
 
-const claudeCalls = plan.filter((p) => p.engine !== "jev").reduce((n, p) => n + p.tasks.length, 0);
+const claudeCalls = plan.filter((p) => !isJev(p.engine)).reduce((n, p) => n + p.tasks.length, 0);
 console.error(`set ${set}: ${items.length} items | scanner @ ${s.commit} | concurrency ${concurrency}`);
 for (const p of plan) console.error(`  ${p.engine.padEnd(6)} ${String(p.tasks.length).padStart(5)} calls to run (${p.done} done)  ~$${p.estimate.toFixed(2)}`);
 console.error(`  total  ~$${plan.reduce((n, p) => n + p.estimate, 0).toFixed(2)} (Anthropic list prices; Jev at the cookbook rate)`);
@@ -86,7 +86,7 @@ async function pool<T>(xs: T[], n: number, fn: (x: T) => Promise<void>) {
   }));
 }
 
-const jev = engines.includes("jev") ? makeClient() : null;
+const jev = engines.some(isJev) ? makeClient() : null;
 const started = new Date().toISOString();
 // One engine at a time, so engines never compete for the network while timed.
 for (const p of plan) {
@@ -95,9 +95,10 @@ for (const p of plan) {
   let n = 0;
   const run = async ({ item, k, key }: (typeof p.tasks)[number], warm = false) => {
     const base = { key, id: item.id, k, set, group: item.group, expect: item.expect ?? null, reason: item.reason ?? null, engine: p.engine, scanner_commit: s.commit, run_started: started, warm };
-    if (p.engine === "jev") {
-      const r = await askJev(jev!, item.product);
-      const e2 = e2Rule(item.product, "nouls" in r ? r.nouls! : null, s);
+    if (isJev(p.engine)) {
+      const version = JEV_ENGINES[p.engine]!;
+      const r = await askJev(jev!, item.product, version.questions);
+      const e2 = version.rule(item.product, "nouls" in r ? r.nouls! : null, s);
       appendFileSync(p.out, JSON.stringify({ ...base, ...r, e2 }) + "\n");
     } else {
       const r = await askClaude(p.engine as ClaudeEngine, item.product, s);

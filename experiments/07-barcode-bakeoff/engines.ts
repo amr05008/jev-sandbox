@@ -1,6 +1,7 @@
 import type { TypeSafeClient } from "@typesafe-ai/sdk";
 import { MODEL as JEV_MODEL } from "../../lib/client.ts";
 import { ALL, CLEAR_BELOW, SOURCE_AT, SOURCES, questions, type QuestionName } from "./questions.ts";
+import * as v2 from "./questions-v2.ts";
 import type { Product, Scanner } from "./scanner.ts";
 
 export const CLAUDE_MODELS = { opus: "claude-opus-4-8", haiku: "claude-haiku-4-5" } as const;
@@ -73,17 +74,17 @@ export type Nouls = Record<QuestionName, number>;
  * Jev on the ingredient text only. No SDK retries, so the latency is one round
  * trip: what a production fast path with zero retries would see.
  */
-export async function askJev(client: TypeSafeClient, product: Product) {
+export async function askJev(client: TypeSafeClient, product: Product, qs: Record<string, any> = questions) {
   const ingredients = (product.ingredients_text ?? "").trim();
   if (!ingredients) return { skipped: "no_text" as const };
   const started = performance.now();
   try {
     const res = await client.systemOne(
-      { model: JEV_MODEL, state: { ingredients }, questions },
+      { model: JEV_MODEL, state: { ingredients }, questions: qs },
       { timeout: 10_000, retry: { maxRetries: 0 } },
     );
     const latencyMs = Math.round(performance.now() - started);
-    const nouls = Object.fromEntries(ALL.map((k) => [k, (res.answers as any)[k].noul as number])) as Nouls;
+    const nouls = Object.fromEntries(Object.keys(qs).map((k) => [k, (res.answers as any)[k].noul as number])) as Nouls;
     return { model: res.model, nouls, latencyMs, usage: res.usage };
   } catch (err: any) {
     return { error: String(err?.message ?? err), latencyMs: Math.round(performance.now() - started) };
@@ -130,3 +131,40 @@ export function e2Rule(p: Product, a: Nouls | null, s: Scanner): E2Result {
   }
   return fall(tagged ? "gluten_tag" : match ? "pattern_match" : "not_clear");
 }
+
+/**
+ * E2 v2: v1's gates and branches, plus a list-quality check before `safe`
+ * (the text must be an ingredient list and look complete). `unsafe` doesn't
+ * need it: a gluten ingredient that is present can't be removed by a cut.
+ */
+export function e2RuleV2(p: Product, a: Record<string, number> | null, s: Scanner): E2Result {
+  const text = (p.ingredients_text ?? "").trim();
+  const labels = Array.isArray(p.labels_tags) ? p.labels_tags : [];
+  if (p.source !== "openfoodfacts") return fall("source");
+  if (!text) return fall("no_text");
+  if (s.hasGlutenFreeLabelTag(labels)) return fall("gf_label");
+  if (s.adverseGlutenLabels(labels).length > 0 || s.unrecognizedGlutenLabels(labels).length > 0) return fall("label_text");
+  if (s.assessGlutenSignal(p)) return fall("signal_note");
+  if (!a) return fall("jev_error");
+
+  const match = text.match(s.GLUTEN_GRAIN_PATTERN);
+  const source = Math.max(...v2.SOURCES.map((k) => a[k]!));
+  if (source >= SOURCE_AT && match && a.may_contain! < SOURCE_AT) {
+    return { settled: true, verdict: "unsafe", via: "unsafe", explanation: `Lists "${match[0]}", which contains gluten.` };
+  }
+
+  const tagged = [...(p.allergens_tags ?? []), ...(p.traces_tags ?? [])].some((t) => s.isGlutenFamilyTag(t));
+  const listOk = a.is_ingredient_list! >= v2.LIST_OK_AT && a.looks_complete! >= v2.LIST_OK_AT;
+  const danger = Math.max(...v2.DANGER.map((k) => a[k]!));
+  if (!tagged && !match && listOk && danger < CLEAR_BELOW) {
+    return { settled: true, verdict: "safe", via: "safe", explanation: "No gluten ingredients are listed and there's no may-contain warning." };
+  }
+  return fall(tagged ? "gluten_tag" : match ? "pattern_match" : !listOk ? "list_quality" : "not_clear");
+}
+
+/** Jev engines by name: each has its own questions, rule and raw file. `jev` is v1, frozen. */
+export const JEV_ENGINES: Record<string, { questions: Record<string, any>; rule: (p: Product, a: any, s: Scanner) => E2Result }> = {
+  jev: { questions, rule: e2Rule },
+  "jev-v2": { questions: v2.questions, rule: e2RuleV2 },
+};
+export const isJev = (engine: string) => engine in JEV_ENGINES;
