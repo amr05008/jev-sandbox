@@ -44,7 +44,9 @@ function latencyTable() {
   if (js.length) {
     say(`| jev (alone) | ${js.length} | ${secs(q(js.map((r) => r.latencyMs), 0.5))} | ${secs(q(js.map((r) => r.latencyMs), 0.95))} | – | ~$0.05 |`);
     for (const [name, fb] of [["opus", opusBy], ["haiku", haikuBy]] as const) {
-      const comp = js.filter((j) => j.e2.settled || fb.get(j.key)?.latencyMs).map((j) => j.latencyMs + (j.e2.settled ? 0 : fb.get(j.key).latencyMs));
+      // Only when that engine answered every record E2 passed on; otherwise the row would be settled-only and look fast.
+      if (!js.every((j) => j.e2.settled || fb.get(j.key)?.latencyMs)) continue;
+      const comp = js.map((j) => j.latencyMs + (j.e2.settled ? 0 : fb.get(j.key).latencyMs));
       if (comp.length) say(`| jev + rules, falling through to ${name} | ${comp.length} | ${secs(q(comp, 0.5))} | ${secs(q(comp, 0.95))} | – | – |`);
     }
     const errs = rows.jev.filter((r) => r.error).length;
