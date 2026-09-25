@@ -33,6 +33,11 @@ records the setup, results, limits, and what I'd try next.
 - **Check what you're scoring against.** An email-classifier outage and
   incomplete food-database tags both made good answers look wrong.
   [Reference-label audit →](experiments/03-gluten-labels/RESULTS.md)
+- **A bake-off on real barcode records put Jev into production.** With a few
+  code rules, Jev agreed with Claude Opus 4.8 on 99.7% of 796 unseen records
+  and answered in 0.20 s instead of 3.03 s. Haiku 4.5 was out after calling a
+  self-contradicting record safe.
+  [Bake-off results →](experiments/07-barcode-bakeoff/RESULTS.md)
 
 > **Not medical advice.** The gluten experiments test model behavior, not
 > whether a food is safe to eat. `safe` is an experimental output label, not a
@@ -42,7 +47,7 @@ records the setup, results, limits, and what I'd try next.
 
 | Path | Contents |
 | --- | --- |
-| [`experiments/`](experiments/README.md) | Six experiments, each with questions, data instructions, and results |
+| [`experiments/`](experiments/README.md) | Seven experiments, each with questions, data instructions, and results |
 | `lib/` | Shared client, runner, and scoring for agreement, confidence thresholds, latency, cost inputs, and error bounds |
 | `protocols/` | Detailed procedures for individual experiments |
 | `scripts/` | Dataset preparation |

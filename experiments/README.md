@@ -4,7 +4,7 @@ I ran these in order: start with a task, inspect the misses, then test what
 might explain them. Each folder has a README for the setup and a `RESULTS.md`
 for what happened. Shared client, runner, and scoring code lives in `../lib/`.
 
-All results below are from September 18, 2026. These are exploratory tests,
+Experiments 01–06 ran on September 18, 2026, and 07 on September 24. These are exploratory tests,
 not production validations. Email scores measure agreement with an existing
 classifier; food-label scores use imperfect database tags and keyword checks.
 
@@ -16,6 +16,7 @@ classifier; food-label scores use imperfect database tags and keyword checks.
 | [04: OCR noise](04-ocr-noise/) | What happens when label text is garbled or cut off? | [Character noise had little effect. Missing text did: the completeness check still let 65 gluten-containing label variants through as safe.](04-ocr-noise/RESULTS.md) |
 | [05: LLM comparison](05-llm-side-by-side/) | How does Jev compare with a scanner's production Claude request? | [No listed-gluten misses found for either model. Jev was 17× faster at an estimated 240× lower cost. Both missed gluten removed by truncation.](05-llm-side-by-side/RESULTS.md) |
 | [06: Vague ingredients](06-vague-ingredients/) | Can Jev reproduce the LLM's caution policy? | [Agreement rose from 76% to 90%. Applying a policy and choosing a useful policy are different problems.](06-vague-ingredients/RESULTS.md) |
+| [07: Barcode bake-off](07-barcode-bakeoff/) | Can a faster engine match the scanner's Claude barcode verdicts with zero false-safe? | [Jev plus code rules agreed 99.7% on 796 unseen records at 0.20 s against 3.03 s. Haiku 4.5 failed on a false safe. It's now in production in shadow mode.](07-barcode-bakeoff/RESULTS.md) |
 
 > **Not medical advice.** `safe` is a model output label, not a determination
 > that a food is safe to eat.
